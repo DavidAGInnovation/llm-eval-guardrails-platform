@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     openai_base_url: str = "https://api.openai.com/v1"
     openai_timeout_seconds: float = 30.0
 
+    scoring_mode: str = "heuristic"
+    judge_model_name: str = "openai/gpt-5.2"
+    judge_timeout_seconds: float = 45.0
+
     otel_service_name: str = "llm-eval-guardrails-api"
     otel_exporter_otlp_endpoint: str | None = None
 

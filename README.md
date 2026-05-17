@@ -1,5 +1,8 @@
 # LLM Evaluation & Guardrails Platform
 
+[![CI](https://github.com/DavidAGInnovation/llm-eval-guardrails-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/DavidAGInnovation/llm-eval-guardrails-platform/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
+
 Production-style platform to evaluate prompts across models, score quality/hallucination/toxicity, enforce guardrail policies, and track regressions.
 
 ## Stack
@@ -125,6 +128,32 @@ curl -X POST http://localhost:8000/runs/<CANDIDATE_RUN_ID>/compare \
   -d '{"baseline_run_id":"<BASELINE_RUN_ID>"}'
 ```
 
+## Screenshots
+
+### Dashboard UI (`/ui`) - Desktop
+
+![Dashboard desktop](docs/screenshots/ui-dashboard-desktop.png)
+
+### Dashboard UI (`/ui`) - Mobile
+
+![Dashboard mobile](docs/screenshots/ui-dashboard-mobile.png)
+
+### API docs (`/docs`)
+
+![API docs](docs/screenshots/api-docs.png)
+
+### Evaluation runs (`/runs`)
+
+![Runs list](docs/screenshots/runs-list.png)
+
+### Run results (`/runs/{id}/results`)
+
+![Run results](docs/screenshots/run-results.png)
+
+### Prometheus metrics endpoint (`/metrics`)
+
+![Metrics endpoint](docs/screenshots/metrics-endpoint.png)
+
 ## Guardrail Policy Semantics
 
 - Block if `quality_score < min_quality_score`
@@ -137,3 +166,38 @@ curl -X POST http://localhost:8000/runs/<CANDIDATE_RUN_ID>/compare \
 - The `mock` provider is intentionally deterministic for portfolio demos and regression checks.
 - Add more providers (`anthropic`, etc.) behind `app/services/providers.py`.
 - For production, run migrations explicitly and disable startup `create_all`.
+
+## Real Provider Examples
+
+Run live model evaluations without Docker (uses local SQLite by default):
+
+```bash
+OPENAI_API_KEY=<your_key> \
+.venv/bin/python scripts/run_provider_examples.py \
+  --provider openai \
+  --models gpt-4o-mini,gpt-4.1-mini
+```
+
+Run with LLM-as-judge scoring (example: GPT-5.2 via OpenRouter):
+
+```bash
+OPENAI_API_KEY=<your_key> \
+OPENAI_BASE_URL=https://openrouter.ai/api/v1 \
+SCORING_MODE=llm_judge \
+JUDGE_MODEL_NAME=openai/gpt-5.2 \
+.venv/bin/python scripts/run_provider_examples.py \
+  --scenario challenge \
+  --policy-profile strict \
+  --provider openai \
+  --models openai/gpt-4.1-mini,anthropic/claude-3.5-haiku,deepseek/deepseek-chat-v3.1
+```
+
+OpenAI-compatible endpoints are also supported (for example OpenRouter) by overriding:
+
+```bash
+OPENAI_API_KEY=<provider_key> \
+OPENAI_BASE_URL=https://openrouter.ai/api/v1 \
+.venv/bin/python scripts/run_provider_examples.py \
+  --provider openai \
+  --models openai/gpt-4o-mini
+```

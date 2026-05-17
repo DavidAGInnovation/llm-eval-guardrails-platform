@@ -47,4 +47,5 @@ testpaths = ["tests"]
 python_version = "3.11"
 strict = false
 warn_unused_configs = true
+ignore_missing_imports = true
 exclude = ["alembic"]

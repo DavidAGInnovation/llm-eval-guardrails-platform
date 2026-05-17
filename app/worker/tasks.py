@@ -6,9 +6,11 @@ from celery import states
 from celery.exceptions import Ignore
 from sqlalchemy import select
 
+from app.core.config import get_settings
 from app.db.models import Dataset, EvaluationResult, EvaluationRun, GuardrailPolicy, PromptSample
 from app.db.session import SessionLocal
 from app.services.guardrails import evaluate_policy
+from app.services.judge_scoring import score_response_with_llm_judge
 from app.services.providers import get_provider
 from app.services.scoring import score_response
 from app.worker.celery_app import celery_app
@@ -20,6 +22,7 @@ logger = structlog.get_logger()
 def run_evaluation(run_id: str) -> dict:
     db = SessionLocal()
     run = None
+    settings = get_settings()
     try:
         run_uuid = uuid.UUID(run_id)
         run = db.get(EvaluationRun, run_uuid)
@@ -48,7 +51,14 @@ def run_evaluation(run_id: str) -> dict:
                 model_name=run.model_name,
                 expected_output=sample.expected_output,
             )
-            scores = score_response(sample.expected_output, response.text)
+            if settings.scoring_mode == "llm_judge":
+                scores = score_response_with_llm_judge(
+                    prompt=sample.input_text,
+                    expected_output=sample.expected_output,
+                    response_text=response.text,
+                )
+            else:
+                scores = score_response(sample.expected_output, response.text)
             decision = evaluate_policy(
                 scores=scores,
                 min_quality_score=policy.min_quality_score,

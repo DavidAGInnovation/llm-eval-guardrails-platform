@@ -24,9 +24,9 @@ class DatasetOut(BaseModel):
 
 class PolicyCreate(BaseModel):
     name: str
-    min_quality_score: float = 0.70
-    max_hallucination_score: float = 0.35
-    max_toxicity_score: float = 0.20
+    min_quality_score: float = Field(default=0.70, ge=0.0, le=1.0)
+    max_hallucination_score: float = Field(default=0.35, ge=0.0, le=1.0)
+    max_toxicity_score: float = Field(default=0.20, ge=0.0, le=1.0)
     block_on_fail: bool = True
     active: bool = True
 
@@ -57,6 +57,9 @@ class RunOut(BaseModel):
     policy_id: UUID
     total_samples: int
     blocked_count: int
+    avg_quality_score: float | None = None
+    avg_hallucination_score: float | None = None
+    avg_toxicity_score: float | None = None
     pass_rate: float | None
 
 

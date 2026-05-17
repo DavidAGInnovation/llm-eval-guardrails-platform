@@ -1,17 +1,19 @@
 import datetime as dt
 import uuid
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text, Uuid
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+JSON_TYPE = JSON().with_variant(JSONB, "postgresql")
 
 
 class Dataset(Base):
     __tablename__ = "datasets"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=dt.datetime.utcnow)
@@ -22,11 +24,11 @@ class Dataset(Base):
 class PromptSample(Base):
     __tablename__ = "prompt_samples"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    dataset_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("datasets.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    dataset_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("datasets.id", ondelete="CASCADE"), nullable=False)
     input_text: Mapped[str] = mapped_column(Text, nullable=False)
     expected_output: Mapped[str] = mapped_column(Text, nullable=False)
-    metadata_json: Mapped[dict] = mapped_column(JSONB, default=dict)
+    metadata_json: Mapped[dict] = mapped_column(JSON_TYPE, default=dict)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=dt.datetime.utcnow)
 
     dataset: Mapped[Dataset] = relationship(back_populates="prompts")
@@ -35,7 +37,7 @@ class PromptSample(Base):
 class GuardrailPolicy(Base):
     __tablename__ = "guardrail_policies"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     min_quality_score: Mapped[float] = mapped_column(Float, default=0.70)
     max_hallucination_score: Mapped[float] = mapped_column(Float, default=0.35)
@@ -48,9 +50,9 @@ class GuardrailPolicy(Base):
 class EvaluationRun(Base):
     __tablename__ = "evaluation_runs"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    dataset_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("datasets.id", ondelete="CASCADE"), nullable=False)
-    policy_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("guardrail_policies.id"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    dataset_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("datasets.id", ondelete="CASCADE"), nullable=False)
+    policy_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("guardrail_policies.id"), nullable=False)
     provider: Mapped[str] = mapped_column(String(50), default="mock")
     model_name: Mapped[str] = mapped_column(String(120), default="mock-safe")
     status: Mapped[str] = mapped_column(String(30), default="queued")
@@ -67,15 +69,15 @@ class EvaluationRun(Base):
 class EvaluationResult(Base):
     __tablename__ = "evaluation_results"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    run_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("evaluation_runs.id", ondelete="CASCADE"), nullable=False)
-    prompt_sample_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("prompt_samples.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("evaluation_runs.id", ondelete="CASCADE"), nullable=False)
+    prompt_sample_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("prompt_samples.id", ondelete="CASCADE"), nullable=False)
     response_text: Mapped[str] = mapped_column(Text, nullable=False)
     quality_score: Mapped[float] = mapped_column(Float, nullable=False)
     hallucination_score: Mapped[float] = mapped_column(Float, nullable=False)
     toxicity_score: Mapped[float] = mapped_column(Float, nullable=False)
     blocked: Mapped[bool] = mapped_column(Boolean, default=False)
-    block_reasons: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    block_reasons: Mapped[list[str]] = mapped_column(JSON_TYPE, default=list)
     latency_ms: Mapped[int] = mapped_column(Integer, default=0)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=dt.datetime.utcnow)

@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.db.models import Dataset, EvaluationResult, EvaluationRun, GuardrailPolicy
+from app.db.models import Dataset, EvaluationResult, EvaluationRun, GuardrailPolicy, PromptSample
 from app.db.schemas import RegressionCompareIn, RegressionCompareOut, RunCreate, RunOut
 from app.db.session import get_db
 from app.services.regressions import verdict_from_deltas
@@ -57,6 +57,9 @@ def start_run(payload: RunCreate, db: Session = Depends(get_db)) -> RunOut:
         policy_id=run.policy_id,
         total_samples=run.total_samples,
         blocked_count=run.blocked_count,
+        avg_quality_score=run.avg_quality_score,
+        avg_hallucination_score=run.avg_hallucination_score,
+        avg_toxicity_score=run.avg_toxicity_score,
         pass_rate=run.pass_rate,
     )
 
@@ -74,6 +77,9 @@ def list_runs(db: Session = Depends(get_db)) -> list[RunOut]:
             policy_id=r.policy_id,
             total_samples=r.total_samples,
             blocked_count=r.blocked_count,
+            avg_quality_score=r.avg_quality_score,
+            avg_hallucination_score=r.avg_hallucination_score,
+            avg_toxicity_score=r.avg_toxicity_score,
             pass_rate=r.pass_rate,
         )
         for r in rows
@@ -94,19 +100,35 @@ def get_run(run_id: UUID, db: Session = Depends(get_db)) -> RunOut:
         policy_id=run.policy_id,
         total_samples=run.total_samples,
         blocked_count=run.blocked_count,
+        avg_quality_score=run.avg_quality_score,
+        avg_hallucination_score=run.avg_hallucination_score,
+        avg_toxicity_score=run.avg_toxicity_score,
         pass_rate=run.pass_rate,
     )
 
 
 @router.get("/{run_id}/results")
 def get_run_results(run_id: UUID, db: Session = Depends(get_db)) -> list[dict]:
+    run = db.get(EvaluationRun, run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
     rows = db.execute(
         select(EvaluationResult).where(EvaluationResult.run_id == run_id).order_by(EvaluationResult.created_at.asc())
     ).scalars().all()
+
+    prompt_ids = [row.prompt_sample_id for row in rows]
+    prompt_rows = (
+        db.execute(select(PromptSample).where(PromptSample.id.in_(prompt_ids))).scalars().all()
+        if prompt_ids
+        else []
+    )
+    prompt_text_by_id = {row.id: row.input_text for row in prompt_rows}
     return [
         {
             "id": str(r.id),
             "prompt_sample_id": str(r.prompt_sample_id),
+            "prompt_text": prompt_text_by_id.get(r.prompt_sample_id, ""),
             "response_text": r.response_text,
             "quality_score": r.quality_score,
             "hallucination_score": r.hallucination_score,

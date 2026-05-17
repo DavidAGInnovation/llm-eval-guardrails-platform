@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 from starlette.middleware.cors import CORSMiddleware
+from starlette.staticfiles import StaticFiles
 
 from app.api.routes import datasets, health, policies, runs
 from app.core.config import get_settings
@@ -52,3 +53,4 @@ app.include_router(health.router)
 app.include_router(datasets.router)
 app.include_router(policies.router)
 app.include_router(runs.router)
+app.mount("/ui", StaticFiles(directory="app/ui", html=True), name="ui")
