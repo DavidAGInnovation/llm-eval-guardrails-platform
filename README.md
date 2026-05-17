@@ -134,10 +134,6 @@ curl -X POST http://localhost:8000/runs/<CANDIDATE_RUN_ID>/compare \
 
 ![Dashboard desktop](docs/screenshots/ui-dashboard-desktop.png)
 
-### Dashboard UI (`/ui`) - Mobile
-
-![Dashboard mobile](docs/screenshots/ui-dashboard-mobile.png)
-
 ### API docs (`/docs`)
 
 ![API docs](docs/screenshots/api-docs.png)
