@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "llm-eval-guardrails-platform"
 version = "0.1.0"
@@ -49,3 +53,6 @@ strict = false
 warn_unused_configs = true
 ignore_missing_imports = true
 exclude = ["alembic"]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
